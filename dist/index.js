@@ -170,8 +170,11 @@ var exportFn = (options = {}) => {
         });
         if (files.length) {
           const handles = files.map(async (publicFilePath) => {
-            const filePath = publicFilePath.replace(publicDir + "/", "");
+            const filePath = publicFilePath.replace(publicDir + import_path2.default.sep, "");
             const fullFilePath = import_path2.default.join(outputPath, filePath);
+            if (import_fs_extra.default.existsSync(fullFilePath) === false) {
+              return;
+            }
             const { mtimeMs } = await import_fs_extra.default.stat(fullFilePath);
             if (mtimeMs <= (mtimeCache.get(filePath) || 0)) {
               return;

@@ -141,8 +141,11 @@ var exportFn = (options = {}) => {
         });
         if (files.length) {
           const handles = files.map(async (publicFilePath) => {
-            const filePath = publicFilePath.replace(publicDir + "/", "");
+            const filePath = publicFilePath.replace(publicDir + path2.sep, "");
             const fullFilePath = path2.join(outputPath, filePath);
+            if (fs2.existsSync(fullFilePath) === false) {
+              return;
+            }
             const { mtimeMs } = await fs2.stat(fullFilePath);
             if (mtimeMs <= (mtimeCache.get(filePath) || 0)) {
               return;
