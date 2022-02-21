@@ -1,38 +1,25 @@
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+import path$1 from 'pathe';
+import fs from 'fs-extra';
+import path from 'path';
+import chalk from 'chalk';
+import Debug from 'debug';
+import imagemin from 'imagemin';
+import imageminGif from 'imagemin-gifsicle';
+import imageminPng from 'imagemin-pngquant';
+import imageminOptPng from 'imagemin-optipng';
+import imageminJpeg from 'imagemin-mozjpeg';
+import imageminSvgo from 'imagemin-svgo';
+import imageminWebp from 'imagemin-webp';
+import imageminJpegTran from 'imagemin-jpegtran';
 
-// src/index.ts
-import path2 from "path";
-import fs2 from "fs-extra";
-
-// src/utils.ts
-import fs from "fs";
-import path from "path";
-var isFunction = (arg) => typeof arg === "function";
-var isBoolean = (arg) => {
+const isFunction = (arg) => typeof arg === "function";
+const isBoolean = (arg) => {
   return typeof arg === "boolean";
 };
-var isNotFalse = (arg) => {
+const isNotFalse = (arg) => {
   return !(isBoolean(arg) && !arg);
 };
-var isRegExp = (arg) => Object.prototype.toString.call(arg) === "[object RegExp]";
+const isRegExp = (arg) => Object.prototype.toString.call(arg) === "[object RegExp]";
 function readAllFiles(root, reg) {
   let resultArr = [];
   try {
@@ -55,33 +42,20 @@ function readAllFiles(root, reg) {
       }
     }
   } catch (error) {
+    console.log(error);
   }
   return resultArr;
 }
 
-// src/index.ts
-import chalk from "chalk";
-import { debug as Debug } from "debug";
-import imagemin from "imagemin";
-import imageminGif from "imagemin-gifsicle";
-import imageminPng from "imagemin-pngquant";
-import imageminOptPng from "imagemin-optipng";
-import imageminJpeg from "imagemin-mozjpeg";
-import imageminSvgo from "imagemin-svgo";
-import imageminWebp from "imagemin-webp";
-import imageminJpegTran from "imagemin-jpegtran";
-var debug = Debug("vite-plugin-imagemin");
-var extRE = /\.(png|jpeg|gif|jpg|bmp|svg)$/i;
-var exportFn = (options = {}) => {
+const debug = Debug.debug("vite-plugin-imagemin");
+const extRE = /\.(png|jpeg|gif|jpg|bmp|svg)$/i;
+function index(options = {}) {
   let outputPath;
   let publicDir;
   let config;
-  const emptyPlugin = {
-    name: "vite:imagemin"
-  };
   const { disable = false, filter = extRE, verbose = true } = options;
   if (disable) {
-    return emptyPlugin;
+    return {};
   }
   debug("plugin options:", options);
   const mtimeCache = /* @__PURE__ */ new Map();
@@ -103,29 +77,30 @@ var exportFn = (options = {}) => {
       config.logger.error("imagemin error:" + filePath);
     }
   }
-  return __spreadProps(__spreadValues({}, emptyPlugin), {
+  return {
+    name: "vite:imagemin",
     apply: "build",
     enforce: "post",
     configResolved(resolvedConfig) {
       config = resolvedConfig;
-      outputPath = config.build.outDir;
+      outputPath = path$1.resolve(path$1.join(config.root, config.build.outDir));
       if (typeof config.publicDir === "string") {
         publicDir = config.publicDir;
       }
       debug("resolvedConfig:", resolvedConfig);
     },
-    async generateBundle(_options, bundler) {
+    async generateBundle(_, bundler) {
       tinyMap = /* @__PURE__ */ new Map();
       const files = [];
       Object.keys(bundler).forEach((key) => {
-        filterFile(path2.resolve(outputPath, key), filter) && files.push(key);
+        filterFile(path$1.resolve(outputPath, key), filter) && files.push(key);
       });
       debug("files:", files);
       if (!files.length) {
         return;
       }
       const handles = files.map(async (filePath) => {
-        let source = bundler[filePath].source;
+        const source = bundler[filePath].source;
         const content = await processFile(filePath, source);
         if (content) {
           bundler[filePath].source = content;
@@ -141,19 +116,19 @@ var exportFn = (options = {}) => {
         });
         if (files.length) {
           const handles = files.map(async (publicFilePath) => {
-            const filePath = publicFilePath.replace(publicDir + path2.sep, "");
-            const fullFilePath = path2.join(outputPath, filePath);
-            if (fs2.existsSync(fullFilePath) === false) {
+            const filePath = publicFilePath.replace(publicDir + path$1.sep, "");
+            const fullFilePath = path$1.join(outputPath, filePath);
+            if (fs.existsSync(fullFilePath) === false) {
               return;
             }
-            const { mtimeMs } = await fs2.stat(fullFilePath);
+            const { mtimeMs } = await fs.stat(fullFilePath);
             if (mtimeMs <= (mtimeCache.get(filePath) || 0)) {
               return;
             }
-            const buffer = await fs2.readFile(fullFilePath);
+            const buffer = await fs.readFile(fullFilePath);
             const content = await processFile(filePath, buffer);
             if (content) {
-              await fs2.writeFile(fullFilePath, content);
+              await fs.writeFile(fullFilePath, content);
               mtimeCache.set(filePath, Date.now());
             }
           });
@@ -164,8 +139,8 @@ var exportFn = (options = {}) => {
         handleOutputLogger(config, tinyMap);
       }
     }
-  });
-};
+  };
+}
 function handleOutputLogger(config, recordMap) {
   config.logger.info(`
 ${chalk.cyan("\u2728 [vite-plugin-imagemin]")}- compressed image resource successfully: `);
@@ -174,12 +149,13 @@ ${chalk.cyan("\u2728 [vite-plugin-imagemin]")}- compressed image resource succes
   const maxKeyLength = Math.max(...keyLengths);
   const valueKeyLength = Math.max(...valueLengths);
   recordMap.forEach((value, name) => {
-    let { ratio, size, oldSize } = value;
+    let { ratio } = value;
+    const { size, oldSize } = value;
     ratio = Math.floor(100 * ratio);
     const fr = `${ratio}`;
     const denseRatio = ratio > 0 ? chalk.red(`+${fr}%`) : ratio <= 0 ? chalk.green(`${fr}%`) : "";
     const sizeStr = `${oldSize.toFixed(2)}kb / tiny: ${size.toFixed(2)}kb`;
-    config.logger.info(chalk.dim(path2.basename(config.build.outDir)) + "/" + chalk.blueBright(name) + " ".repeat(2 + maxKeyLength - name.length) + chalk.gray(`${denseRatio} ${" ".repeat(valueKeyLength - fr.length)}`) + " " + chalk.dim(sizeStr));
+    config.logger.info(chalk.dim(path$1.basename(config.build.outDir)) + "/" + chalk.blueBright(name) + " ".repeat(2 + maxKeyLength - name.length) + chalk.gray(`${denseRatio} ${" ".repeat(valueKeyLength - fr.length)}`) + " " + chalk.dim(sizeStr));
   });
   config.logger.info("\n");
 }
@@ -244,8 +220,5 @@ function getImageminPlugins(options = {}) {
   }
   return plugins;
 }
-var src_default = exportFn;
-module.exports = exportFn;
-export {
-  src_default as default
-};
+
+export { index as default };

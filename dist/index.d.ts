@@ -1,4 +1,3 @@
-import { Plugin } from 'vite';
 import { Options } from 'imagemin-gifsicle';
 import { Options as Options$6 } from 'imagemin-svgo';
 import { Options as Options$1 } from 'imagemin-mozjpeg';
@@ -63,6 +62,6 @@ interface VitePluginImageMin {
     jpegTran?: EnabledOptions<Options$5>;
 }
 
-declare const exportFn: (options?: VitePluginImageMin) => Plugin;
+declare function export_default(options?: VitePluginImageMin): any;
 
-export { exportFn as default };
+export { export_default as default };
